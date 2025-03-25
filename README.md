@@ -51,7 +51,7 @@ final class Store {
 
 ### 1. Whole Class Is Main-Actor Isolated
 
-By declaring conformance within the class body (or marking the class itself with `@MainActor` but the latte is more obvious), the **entire class** becomes isolated to the main actor. This means **every** property and method is guaranteed to run on the main thread, providing strong safety for UI-related code. 
+By declaring conformance within the class body (or marking the class itself with `@MainActor` but the latter is more obvious), the **entire class** becomes isolated to the main actor. This means **every** property and method is guaranteed to run on the main thread, providing strong safety for UI-related code. 
 
 ```swift
 // Entire class becomes MainActor-isolated
@@ -73,7 +73,7 @@ If you only want the protocol’s methods to be main-actor isolated—while leav
 
 ```swift
 // Only MainActorIsolated methods are main-actor isolated.
-extension DataStore: MainActorIsolated {
+extension Store: MainActorIsolated {
     func performUpdate(with date: Date) async {
         // Runs on the main actor context for the protocol requirement
         await executeInternalUpdate(with: date)
@@ -81,7 +81,7 @@ extension DataStore: MainActorIsolated {
 }
 ```
 
-Here, **only** the `performUpdate(with:)` requirement (and anything else explicitly required by `MainActorIsolated`) runs in a main-actor context. Other parts of `DataStore` remain unrestricted. This can be useful if you’re shadowing or extending the class with a protocol, letting you keep certain functionality non-isolated while respecting `MainActor` constraints for UI-critical actions.
+Here, **only** the `performUpdate(with:)` requirement (and anything else explicitly required by `MainActorIsolated`) runs in a main-actor context. Other parts of `Store` remain unrestricted. This can be useful if you’re shadowing or extending the class with a protocol, letting you keep certain functionality non-isolated while respecting `MainActor` constraints for UI-critical actions.
 
 > **Note:** This approach demands caution if you accidentally rely on main-thread access for properties or methods that aren’t explicitly covered by the protocol. **Make sure you truly want partial isolation**.
 
@@ -89,14 +89,14 @@ Here, **only** the `performUpdate(with:)` requirement (and anything else explici
 
 ### When Partial Isolation Might Be Favorable
 
-1. **Shadowing or multiple protocol conformances:** Suppose `DataStore` also needs to conform to another protocol that allows or requires background execution. By isolating just `MainActorIsolated` methods in an extension, you can keep other protocols’ methods from forcing a main-thread context unnecessarily.  
+1. **Shadowing or multiple protocol conformances:** Suppose `Store` also needs to conform to another protocol that allows or requires background execution. By isolating just `MainActorIsolated` methods in an extension, you can keep other protocols’ methods from forcing a main-thread context unnecessarily.  
 2. **Performance considerations:** Some logic might be CPU-intensive and better suited for a background actor or concurrent thread. Partial isolation ensures only the UI-bound or strictly main-thread-relevant code is protected by `@MainActor`.
 
 ---
 
 ### When Whole Class Isolation Is More Favorable
 
-1. **UI-centric data objects:** Often, `DataStore` is closely bound to your views. Declaring the entire class as `@MainActor` or conforming within its body ensures every property and method is safely on the main thread.  
+1. **UI-centric data objects:** Often, `Store` is closely bound to your views. Declaring the entire class as `@MainActor` or conforming within its body ensures every property and method is safely on the main thread.  
 2. **Compile-time safety:** You get broader compiler checks that **all** class interactions remain main-thread–safe. In Swift 6, for instance, code that tries to mutate a main-actor–isolated property from a background context raises a compile-time error.
 
 ---
