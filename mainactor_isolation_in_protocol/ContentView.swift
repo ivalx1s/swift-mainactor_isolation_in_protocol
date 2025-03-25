@@ -9,28 +9,29 @@ struct MainActorProtocolDemoApp: App {
     }
 }
 
-// MARK: - Протокол с MainActor изоляцией
-/// Протокол, требующий выполнения методов на MainActor.
-/// - Важно: Один лишь атрибут `@MainActor` на протоколе не гарантирует изоляцию реализаций.
-///   Изоляция будет работать на **весь класс** только если:
-///   1) класс сам помечен `@MainActor`, или
-///   2) конформанс к протоколу (например, `Store: MainActorIsolated`) объявлен
-///      **внутри** основной декларации класса, а не в extension.
+// MARK: - Protocol with MainActor isolation
+/// A protocol that requires its methods to be run on MainActor.
+/// - Important: Simply marking the protocol itself with `@MainActor` does not guarantee
+///   that all implementations are isolated.
+///   The isolation will work for the **entire class** only if:
+///   1) the class itself is marked `@MainActor`, or
+///   2) the conformance to the protocol (e.g. `Store: MainActorIsolated`) is declared
+///      **inside** the main body of the class, not in an extension.
 ///
-/// Если объявить конформанс к `MainActorIsolated` в extension, то **лишь** методы протокола
-/// будут изолированы, а остальные части класса (свойства, дополнительные методы) — нет.
-/// Это может быть желанным (частичная изоляция) или потенциально опасным (случайные data races).
+/// If you declare conformance to `MainActorIsolated` in an extension, then **only** the protocol methods
+/// will be isolated, while the rest of the class (properties, additional methods) will not.
+/// This can be desired (partial isolation) or potentially risky (accidental data races).
 @MainActor
 protocol MainActorIsolated {
     func performUpdate(with date: Date) async
 }
 
-// MARK: - Базовая реализация (Полная изоляция класса)
-/// `Store` демонстрирует полную `MainActor`-изоляцию:
-/// - Конформанс к `MainActorIsolated` объявлен **внутри** класса.
-/// - Это означает, что все свойства и методы `Store` изолированы в `MainActor`.
-/// - Особенно полезно для UI-ориентированных объектов (например, SwiftUI View Model),
-///   где любые модификации состояния происходят на main thread.
+// MARK: - Basic implementation (Full class isolation)
+/// `Store` demonstrates complete `MainActor` isolation:
+/// - Conformance to `MainActorIsolated` is declared **within** the class.
+/// - This means that all properties and methods of `Store` are isolated on `MainActor`.
+/// - This is particularly useful for UI-oriented objects (for example, a SwiftUI View Model),
+///   where any state modifications should happen on the main thread.
 @Observable
 final class Store: MainActorIsolated {
     var lastUpdate: Date = .now {
@@ -55,25 +56,25 @@ final class Store: MainActorIsolated {
     }
 }
 
-// MARK: - Пример НЕполной изоляции (через extension)
-/// Пояснения:
-/// 1. При таком подходе изолирован на MainActor будет только метод performUpdate.
-/// 2. Внутренняя логика executeInternalUpdate(with:) не обязана быть на MainActor.
-/// 3. Swift 6 запретит такой вызов из-за потенциальной гонки данных, если метод
-///    executeInternalUpdate не помечен @MainActor.
-/// 4. Подобная “частичная изоляция” может быть целесообразна, если класс несёт
-///    смешанные обязанности (UI + бекграунд-операции). Но нужно внимательно убедиться, что
-///    non-isolated части не обращаются к UI-состоянию в обход главного актера.
-//extension Store: MainActorIsolated {
-//    func performUpdate(with date: Date) async {
-//        logThread("Unsafe update started on:")
-//        await executeInternalUpdate(with: date)
-//    }
-//}
+// MARK: - Example of INcomplete isolation (via extension)
+/// Explanations:
+/// 1. With this approach, only the performUpdate method will be isolated on MainActor.
+/// 2. The internal logic of executeInternalUpdate(with:) is not required to run on MainActor.
+/// 3. Swift 6 will forbid such a call because of a potential data race if
+///    executeInternalUpdate is not marked @MainActor.
+/// 4. Such “partial isolation” can make sense if the class has
+///    mixed responsibilities (UI + background operations). But you must carefully ensure
+///    that the non-isolated parts do not access UI state while bypassing the main actor.
+/*
+ extension Store: MainActorIsolated {
+ func performUpdate(with date: Date) async {
+ logThread("Unsafe update started on:")
+ await executeInternalUpdate(with: date)
+ }
+ }
+ */
 
- 
-
-// MARK: - Тестовая View
+// MARK: - Test View
 struct ContentView: View {
     @State private var store = Store()
     
@@ -91,18 +92,18 @@ struct ContentView: View {
     }
 }
 
-// MARK: - Результаты тестирования
-/// Сценарий 1: Конформанс в основном теле класса (как сейчас в примере)
-/// - performUpdate: выполняется на MainActor
-/// - executeInternalUpdate: выполняется на MainActor
-/// - didSet: вызывается на MainActor (безопасно для UI)
+// MARK: - Test results
+/// Scenario 1: Conformance declared in the main class body (as in the current example)
+/// - performUpdate: runs on MainActor
+/// - executeInternalUpdate: runs on MainActor
+/// - didSet: called on MainActor (safe for UI)
 ///
-/// Сценарий 2: Конформанс через extension
-/// - performUpdate: вызывается на MainActor (т.к. метод из протокола)
-/// - executeInternalUpdate: может оказаться без изоляции, т.е. на фоне
-/// - didSet: потенциально на фоне (небезопасно для UI, т.к. есть прослойка Observation которая может синхронизировать доступ)
+/// Scenario 2: Conformance via an extension
+/// - performUpdate: runs on MainActor (because it’s a protocol method)
+/// - executeInternalUpdate: may end up unisolated, i.e. on a background thread
+/// - didSet: potentially on a background thread (unsafe for UI, because there's an Observation layer that may synchronize access)
 ///
-/// Вывод: Если нужен полный compile-time контроль и удобство, объявляйте:
-/// 1. Класс как `@MainActor`, или
-/// 2. Конформанс к протоколу внутри тела класса,
-/// чтобы все свойства и методы реально были под защитой главного актора.
+/// Conclusion: If you need full compile-time control and convenience, declare:
+/// 1. The class as `@MainActor`, or
+/// 2. Conformance to the protocol within the class body,
+/// so that all properties and methods are truly under the protection of the main actor.
