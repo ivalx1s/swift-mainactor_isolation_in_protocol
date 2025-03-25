@@ -25,20 +25,23 @@ protocol MainActorIsolated {
 final class DataStore: MainActorIsolated {
     var lastUpdate: Date = .now {
         didSet {
-            print("DidSet triggered on:", Thread.current)
+            logThread("DidSet triggered on:")
         }
     }
     
     func performUpdate(with date: Date) async {
-        print("Update started on:", Thread.current)
+        logThread("Update started on:")
         await executeInternalUpdate(with: date)
     }
-    
-    /// Внутренний метод обновления состояния
+
     private func executeInternalUpdate(with date: Date) async {
         try? await Task.sleep(nanoseconds: 100_000_000)
-        print("Internal update executing on:", Thread.current)
+        logThread("Internal update executing on:")
         lastUpdate = date
+    }
+    
+    private func logThread(_ message: String) {
+        print("\(message): \(Thread.current)")
     }
 }
 
@@ -47,9 +50,11 @@ final class DataStore: MainActorIsolated {
 /// - Метод performUpdate будет выполняться на MainActor
 /// - Внутренняя логика (executeInternalUpdate) может выполняться вне MainActor
 /// -  При этом не имеет значения реализация метода находится внутри экстеншена или внутри декларации класса.
+/// - **ВАЖНО**:  вызвать `executeInternalUpdate(with:) невозможно при включении data-race safety Swift 6`
+/// что наглядно демонстрирует красоту и важность compile-time data-race safety.
 // extension DataStore: MainActorIsolated {
 //        func performUpdate(with date: Date) async {
-//            print("Unsafe update started on:", Thread.current)
+//            logThread("Unsafe update started on:")
 //            await executeInternalUpdate(with: date)
 //        }
 // }
@@ -63,7 +68,7 @@ struct ContentView: View {
             Text("Last update: \(store.lastUpdate.formatted())")
             
             Button("Trigger Update") {
-                Task.detached(priority: .userInitiated) {
+                Task {
                     await store.performUpdate(with: .now)
                 }
             }
