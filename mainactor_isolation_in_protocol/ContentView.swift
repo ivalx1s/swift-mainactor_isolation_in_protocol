@@ -22,22 +22,21 @@ protocol MainActorIsolated {
 /// Наблюдаемый класс для демонстрации изоляции
 /// - Важно: Изоляция MainActor работает только если: конформанс к протоколу объявлен в декларации класса
 @Observable
-final class DataStore/*: MainActorIsolated*/ {
+final class DataStore: MainActorIsolated {
     var lastUpdate: Date = .now {
         didSet {
-            // Проверка потока для отслеживания изоляции
             print("DidSet triggered on:", Thread.current)
         }
     }
     
-//    func performUpdate(with date: Date) async {
-//        print("Update started on:", Thread.current)
-//        await executeInternalUpdate(with: date)
-//    }
+    func performUpdate(with date: Date) async {
+        print("Update started on:", Thread.current)
+        await executeInternalUpdate(with: date)
+    }
     
     /// Внутренний метод обновления состояния
     private func executeInternalUpdate(with date: Date) async {
-        try? await Task.sleep(nanoseconds: 1_000_000_000)
+        try? await Task.sleep(nanoseconds: 100_000_000)
         print("Internal update executing on:", Thread.current)
         lastUpdate = date
     }
@@ -48,12 +47,12 @@ final class DataStore/*: MainActorIsolated*/ {
 /// - Метод performUpdate будет выполняться на MainActor
 /// - Внутренняя логика (executeInternalUpdate) может выполняться вне MainActor
 /// -  При этом не имеет значения реализация метода находится внутри экстеншена или внутри декларации класса.
- extension DataStore: MainActorIsolated {
-        func performUpdate(with date: Date) async {
-            print("Unsafe update started on:", Thread.current)
-            await executeInternalUpdate(with: date)
-        }
- }
+// extension DataStore: MainActorIsolated {
+//        func performUpdate(with date: Date) async {
+//            print("Unsafe update started on:", Thread.current)
+//            await executeInternalUpdate(with: date)
+//        }
+// }
 
 // MARK: - Тестовая View
 struct ContentView: View {
