@@ -30,9 +30,9 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		701F041D2D92FBB800BC99C2 /* swift_globalactor_protocol */ = {
+		701F041D2D92FBB800BC99C2 /* mainactor_isolation_in_protocol */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = swift_globalactor_protocol;
+			path = mainactor_isolation_in_protocol;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -65,7 +65,7 @@
 		701F04122D92FBB800BC99C2 = {
 			isa = PBXGroup;
 			children = (
-				701F041D2D92FBB800BC99C2 /* swift_globalactor_protocol */,
+				701F041D2D92FBB800BC99C2 /* mainactor_isolation_in_protocol */,
 				701F041C2D92FBB800BC99C2 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -96,7 +96,7 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				701F041D2D92FBB800BC99C2 /* swift_globalactor_protocol */,
+				701F041D2D92FBB800BC99C2 /* mainactor_isolation_in_protocol */,
 			);
 			name = swift_globalactor_protocol;
 			packageProductDependencies = (
@@ -168,7 +168,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 701F04162D92FBB800BC99C2 /* Build configuration list for PBXProject "swift_globalactor_protocol" */;
+			buildConfigurationList = 701F04162D92FBB800BC99C2 /* Build configuration list for PBXProject "mainactor_isolation_in_protocol" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -373,7 +373,7 @@
 				CODE_SIGN_ENTITLEMENTS = "";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_ASSET_PATHS = "\"swift_globalactor_protocol/Preview Content\"";
+				DEVELOPMENT_ASSET_PATHS = "";
 				DEVELOPMENT_TEAM = 9V756FF79C;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
@@ -412,7 +412,7 @@
 				CODE_SIGN_ENTITLEMENTS = "";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_ASSET_PATHS = "\"swift_globalactor_protocol/Preview Content\"";
+				DEVELOPMENT_ASSET_PATHS = "";
 				DEVELOPMENT_TEAM = 9V756FF79C;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
@@ -536,7 +536,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		701F04162D92FBB800BC99C2 /* Build configuration list for PBXProject "swift_globalactor_protocol" */ = {
+		701F04162D92FBB800BC99C2 /* Build configuration list for PBXProject "mainactor_isolation_in_protocol" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				701F043E2D92FBBC00BC99C2 /* Debug */,
