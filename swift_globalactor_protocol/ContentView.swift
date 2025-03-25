@@ -1,7 +1,7 @@
 import SwiftUI
 
 @main
-struct swift_globalactor_protocolApp: App {
+struct MainActorProtocolDemoApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
@@ -9,87 +9,91 @@ struct swift_globalactor_protocolApp: App {
     }
 }
 
-// цель: получить изоляцию мейн актора через конформанс к протоколу
-// для того что бы иметь гарантии, что сущности реализующие протокол,
-// будут изолированы мейн актором.
-//
-// по итогу, строгой изоляции получить на можем, тк. передача изоляции через протокол работает
-// только для случае, когда конформанс к протоколу происходит в декларации класса
-
-@MainActor // Протокол помечен атрибутом Main Actor
-protocol IUpdate {
-    func update(date: Date) async
+// MARK: - Протокол с MainActor изоляцией
+/// Протокол, требующий выполнения методов на MainActor
+/// - Важно: Сам по себе протокол НЕ гарантирует изоляцию реализаций,
+/// если конформанс (DataStore: MainActorIsolated) добавляется через extension
+@MainActor
+protocol MainActorIsolated {
+    func performUpdate(with date: Date) async
 }
 
-extension LS  {
-    func update(date: Date) async {
-        print("update: ", Thread.current)
-        await internalUpdate(date: date)
-    }
-}
-
-// вызов апдейт на главном (очевидное поведение) но не подходит для случая когда объект в вью не закрыт протоколом IUpdate
-//extension IUpdate {
-//    func update(date: Date) async {
-//        print("update: ", Thread.current)
-//    }
-//}
-
-
-// Конформанс к протоколу в экстеншене класса - исполнение метода update на главном потоке
-// internalUpdate на не главном потоке (по итогу, мутация LS из не мейна, изоляция не обеспечена, не интуитивное поведение), didSet не из мейн
-//extension LS: IUpdate {
-//    func update(date: Date) async {
-//        print("update: ", Thread.current)
-//        await internalUpdate(date: date)
-//    }
-//}
-
-
-// Конформанс к протоколу в декларации класса - исполнение метода update на главном потоке
-// internalUpdate на главном потоке мутация LS не мейна, didSet мейн
-// не имеет значения, реализация update в декларации класса или в экстеншене класса
+// MARK: - Базовая реализация
+/// Наблюдаемый класс для демонстрации изоляции
+/// - Важно: Изоляция MainActor работает только если: конформанс к протоколу объявлен в декларации класса
 @Observable
-final class LS: IUpdate {
-    var date: Date = .now {
+final class DataStore/*: MainActorIsolated*/ {
+    var lastUpdate: Date = .now {
         didSet {
-            print("didset: ", Thread.current)
+            // Проверка потока для отслеживания изоляции
+            print("DidSet triggered on:", Thread.current)
         }
     }
-
-//    func update(date: Date) async {
-//        print("update: ", Thread.current)
-//        await internalUpdate(date: date)
+    
+//    func performUpdate(with date: Date) async {
+//        print("Update started on:", Thread.current)
+//        await executeInternalUpdate(with: date)
 //    }
-}
-
-extension LS {
-    private func internalUpdate(date: Date) async {
-        print("internalUpdate: ", Thread.current)
-        self.date = date
+    
+    /// Внутренний метод обновления состояния
+    private func executeInternalUpdate(with date: Date) async {
+        try? await Task.sleep(nanoseconds: 1_000_000_000)
+        print("Internal update executing on:", Thread.current)
+        lastUpdate = date
     }
 }
 
-struct ContentView: View {
-    @State private var ls: LS = .init()
+// MARK: - Пример НЕправильной реализации
+/// Расширение добавляет конформанс к протоколу, но НЕ обеспечивает изоляцию:
+/// - Метод performUpdate будет выполняться на MainActor
+/// - Внутренняя логика (executeInternalUpdate) может выполняться вне MainActor
+/// -  При этом не имеет значения реализация метода находится внутри экстеншена или внутри декларации класса.
+ extension DataStore: MainActorIsolated {
+        func performUpdate(with date: Date) async {
+            print("Unsafe update started on:", Thread.current)
+            await executeInternalUpdate(with: date)
+        }
+ }
 
+// MARK: - Тестовая View
+struct ContentView: View {
+    @State private var store = DataStore()
+    
     var body: some View {
         VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, Global Actors!")
-            Text("date \(ls.date)")
-
-            Button(action: riseUpdate) { Text("Rise") }
+            Text("Last update: \(store.lastUpdate.formatted())")
+            
+            Button("Trigger Update") {
+                Task.detached(priority: .userInitiated) {
+                    await store.performUpdate(with: .now)
+                }
+            }
         }
         .padding()
     }
-
-    private func riseUpdate() {
-        Task.detached {
-            await ls.update(date: .now)
-        }
-    }
 }
 
+// MARK: - Результаты тестирования
+/// Сценарий 1: Конформанс в основном теле класса
+/// - performUpdate: MainActor
+/// - executeInternalUpdate: MainActor
+/// - DidSet: MainActor
+///
+/// Сценарий 2: Конформанс через extension
+/// - performUpdate: MainActor
+/// - executeInternalUpdate: Background
+/// - DidSet: Background (опасно для UI)
+///
+/// Вывод: Для гарантированной изоляции:
+/// 1. Объявляйте конформанс к протоколам, имеющим изоляцию MainActor в основном теле класса.
+/// 2. Помечайте класс как @MainActor при необходимости гарантий полной изоляции
+
+// MARK: - Наблюдения по Swift Observation
+/*
+ 1. Макрос @Observable автоматически синхронизирует изменения свойств с MainActor
+ 2. Прямые изменения свойств из фонового потока будут перенаправлены в главный (но это не точно).
+ 3. Это НЕ отменяет необходимости правильной изоляции акторами:
+ - UI-логика должна выполняться на MainActor
+ - Бизнес-логика должна быть правильно изолирована
+ - Состояние должно защищаться от гонок данных
+ */
