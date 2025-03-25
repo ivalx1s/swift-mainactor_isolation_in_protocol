@@ -1,7 +1,7 @@
 ## Approaches to `MainActor` Isolation with Protocols in Swift
 
 
-[![Swift 5.9+](https://img.shields.io/badge/Swift-5.9+-red?logo=swift)](https://swift.org/download/) [![Xcode 15+](https://img.shields.io/badge/Xcode-15+-blue?logo=xcode)](https://developer.apple.com/xcode/) [![Swift 6](https://img.shields.io/badge/Swift-6.0+-red?logo=swift)](https://swift.org/download/) [![Xcode 16+](https://img.shields.io/badge/Xcode-16+-blue?logo=xcode)](https://developer.apple.com/xcode/) [![RU](https://img.shields.io/badge/Translation-RU-green)](../README-ru.md)
+[![Swift 5.9+](https://img.shields.io/badge/Swift-5.9+-red?logo=swift)](https://swift.org/download/) [![Xcode 15+](https://img.shields.io/badge/Xcode-15+-blue?logo=xcode)](https://developer.apple.com/xcode/) [![Swift 6](https://img.shields.io/badge/Swift-6.0+-red?logo=swift)](https://swift.org/download/) [![Xcode 16+](https://img.shields.io/badge/Xcode-16+-blue?logo=xcode)](https://developer.apple.com/xcode/) [![RU](https://img.shields.io/badge/Translation-RU-green)](https://github.com/ivalx1s/swift-mainactor_isolation_in_protocol/blob/main/README-ru.md)
 
 When working with main-thread–bound code—especially UI updates in SwiftUI or UIKit—concurrency issues can arise if your data is not properly isolated on MainActor. While it's common practice to restrict a whole class or its methods to the main actor using the @MainActor attribute, the nuanced approach of isolating methods through protocol extensions is less explored and not well-documented across online resources.
 Here, we'll delve into two patterns of main actor isolation:
