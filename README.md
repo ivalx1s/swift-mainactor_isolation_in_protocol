@@ -51,7 +51,7 @@ final class Store {
 
 ### 1. Whole Class Is Main-Actor Isolated
 
-By declaring conformance within the class body (or marking the class itself with `@MainActor` but the latter is more obvious), the **entire class** becomes isolated to the main actor. This means **every** property and method is guaranteed to run on the main thread, providing strong safety for UI-related code. 
+By declaring conformance to a protocol marked as `@MainActor` within the class body, the **entire class** becomes isolated to the main actor. This means **every** property and method is guaranteed to run on the main thread, providing strong safety for UI-related code. 
 
 ```swift
 // Entire class becomes MainActor-isolated
@@ -84,6 +84,10 @@ extension Store: MainActorIsolated {
 Here, **only** the `performUpdate(with:)` requirement (and anything else explicitly required by `MainActorIsolated`) runs in a main-actor context. Other parts of `Store` remain unrestricted. This can be useful if you’re shadowing or extending the class with a protocol, letting you keep certain functionality non-isolated while respecting `MainActor` constraints for UI-critical actions.
 
 > **Note:** This approach demands caution if you accidentally rely on main-thread access for properties or methods that aren’t explicitly covered by the protocol. **Make sure you truly want partial isolation**.
+
+It's important to understand that when implementing protocol conformance in a class extension, the entire class does not inherit the isolation defined in the protocol. This can be counterintuitive, especially given Swift's common practice of implementing protocols in type extensions. If you follow this approach without a deep understanding of actor isolation mechanics, you might find yourself in a situation where you expect the class to be isolated, but it remains fully accessible across threads.
+
+This is a logical behavior of the language, as an extension by definition cannot (and should not) alter the isolation of the entity it extends. However, it's a nuanced detail that developers should carefully consider when designing the concurrency architecture of their Swift code.
 
 ---
 
